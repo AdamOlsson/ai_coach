@@ -1,0 +1,1 @@
+/home/adam/Documents/ai_coach/src/paf/pafprocess/dist/pafprocess_ext-1.0-py3.8-linux-x86_64.egg

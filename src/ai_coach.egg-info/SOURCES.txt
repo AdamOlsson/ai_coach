@@ -1,0 +1,7 @@
+README.md
+setup.py
+src/ai_coach.egg-info/PKG-INFO
+src/ai_coach.egg-info/SOURCES.txt
+src/ai_coach.egg-info/dependency_links.txt
+src/ai_coach.egg-info/requires.txt
+src/ai_coach.egg-info/top_level.txt
