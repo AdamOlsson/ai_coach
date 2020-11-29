@@ -3,7 +3,15 @@ import os
 
 
 install_requires = [
-    "pafprocess_ext"
+    "pafprocess_ext",
+    "torch",
+    "torchvision",
+    "pandas",
+    "opencv-python",
+    "numpy",
+    "matplotlib",
+    "scipy",
+    "av"
 ]
 
 dependency_links = [
@@ -20,10 +28,4 @@ setup(name='ai_coach',
       packages=find_packages('src'),
       package_dir={'': 'src'}
      )
-
-# # Building PosePrediction
-# print("\nBuilding paf lib...")
-# stream = os.popen('python PosePrediction/setup.py install')
-# output = stream.read()
-# print(output)
 

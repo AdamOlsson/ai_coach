@@ -1,0 +1,34 @@
+{
+    "model":{
+        "downsample":8,
+        "no_keypoints":18
+    },
+    "dataset":{
+        "image_size":368
+    },
+    "test":{
+        "thresh_heatmap":0.1,
+        "thresh_paf":0.05,
+        "no_intermed_pts_between_keypoints":10
+    },
+    
+    "train":{
+        "device"    : "cuda",
+        "layout"    : "openpose",
+        "strategy"  : "spatial",
+        "lr"        : 0.01,
+        "gamma"     : 0.9,
+        "momentum"  : 0.9,
+        "decay"     : 0.0001,
+        "test_split": 0.1,
+        "batch_size": 8,
+        "epochs"    : 4,
+        "no_workers": 3
+    },
+        
+    "labels":{
+        "snatch":0,
+        "frontsquat":1,
+        "backsquat":2
+    }
+}

@@ -2,3 +2,6 @@
 build/
 Pipfile
 Pipfile.lock
+results/*
+log/*
+ST_GCN_18.pth

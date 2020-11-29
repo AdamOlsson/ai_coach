@@ -1,1 +1,9 @@
+av
+matplotlib
+numpy
+opencv-python
 pafprocess_ext
+pandas
+scipy
+torch
+torchvision
