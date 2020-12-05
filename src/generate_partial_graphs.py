@@ -60,6 +60,9 @@ import torch
 import pandas as pd # easy load of csv
 from util.setup_directories import setup
 
+#debug
+import time
+
 def main(input_dir, output_dir):
     
     device = "cuda"
@@ -87,7 +90,7 @@ def main(input_dir, output_dir):
     
     model = PoseModel()
     model = model.to(device)
-    model.load_state_dict(torch.load("model/weights/vgg19.pth", map_location=torch.device(device)))
+    model.load_state_dict(torch.load("model/PoseModel/weights/vgg19.pth", map_location=torch.device(device)))
     
     counter, sample = {}, {}
     vframes = None

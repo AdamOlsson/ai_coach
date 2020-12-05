@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.FeatureExtractors.VGG import VGG19FeatureExtractor
+from model.PoseModel.FeatureExtractors.VGG import VGG19FeatureExtractor
 
 class Block5(nn.Module):
     def __init__(self, channels_out):

@@ -4,7 +4,7 @@ import time
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 
 from scipy.ndimage.morphology import generate_binary_structure
-from paf.pafprocess import pafprocess
+import pafprocess
 
 from paf.common import Human, BodyPart, CocoPart, CocoColors, CocoPairsRender
 
