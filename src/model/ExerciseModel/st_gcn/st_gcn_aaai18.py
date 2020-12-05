@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from models.st_gcn.graph import Graph
-from models.st_gcn.gconv_origin import ConvTemporalGraphical
+from model.ExerciseModel.st_gcn.graph import Graph
+from model.ExerciseModel.st_gcn.gconv_origin import ConvTemporalGraphical
 
 def zero(x):
     return 0

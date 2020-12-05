@@ -1,10 +1,13 @@
 # pose prediction
-from PosePrediction.model.PoseModel import PoseModel
-from PosePrediction.Transformers.FactorCrop import FactorCrop
-from PosePrediction.Transformers.RTPosePreprocessing import RTPosePreprocessing
-from PosePrediction.Transformers.ToRTPoseInput import ToRTPoseInput
-from PosePrediction.util.load_config import load_config
-from PosePrediction.pose_estimation import poseEstimation
+from model.PoseModel.PoseModel import PoseModel
+from Transformers.FactorCrop import FactorCrop
+from Transformers.RTPosePreprocessing import RTPosePreprocessing
+from Transformers.ToRTPoseInput import ToRTPoseInput
+from util.load_config import load_config
+from util.pose_estimation import poseEstimation
+from util.humans_to_numpy import humansToNumpy
+
+from model.ExerciseModel.st_gcn.st_gcn_aaai18 import ST_GCN_18
 
 import numpy as np
 import torch, torchvision
@@ -17,22 +20,21 @@ import getopt, sys
 # python predict.py -w <path to ST_GCN_18 weights> -v <path to video>
 device = "cuda"
 
-
 def main(weights_path, video_path, device):
 
     try:
-        config = load_config("PosePrediction/config.json") # hacky, if pose model weights is loaded then should config as well
+        config = load_config("config.json") # hacky, if pose model weights is loaded then should config as well
     except:
-        print("ERROR !!! Could not load config PosePrediction/config.json. Are you running the script from the root repository?")
+        print("ERROR !!! Could not load config.json. Are you running the script from the root repository?")
         exit(1)
 
     # load PosePrediction network
     pose_model = PoseModel()
     pose_model.to(device)
     try:
-        pose_model.load_state_dict(torch.load("PosePrediction/model/weights/vgg19.pth", map_location=torch.device(device)))
+        pose_model.load_state_dict(torch.load("model/PoseModel/weights/vgg19.pth", map_location=torch.device(device)))
     except:
-        print("ERROR !!! Could not load pose model weights on path PosePrediction/model/weights/vgg19.pth. Are you running the script from the root repository?")
+        print("ERROR !!! Could not load pose model weights on path model/PoseModel/weights/vgg19.pth. Are you running the script from the root repository?")
         exit(1)
     
     # load video
@@ -48,14 +50,45 @@ def main(weights_path, video_path, device):
         print("ERROR !!! Could not load the video at {}".format(video_path))
         exit(1)
     
+    print("Preprocessing sample...")
     vframes = preprocess({"data":vframes.numpy(), "type":"video"})["data"]
-
-    # extract body positions
+    print("Preprocessing done.")
     
-    # body poss ndarray
-    # predict
+    # extract body positions
+    print("Extracting poses...")
+    vframes = poseEstimation(pose_model, config, vframes, device)
+    print("Extracting done.")
 
-    pass
+    del pose_model
+    # body poss ndarray
+    vframes = humansToNumpy(vframes)
+
+    # predict
+    layout      = config["train"]["layout"]
+    strategy    = config["train"]["strategy"]
+    labels      = config["labels"]
+
+    print("Predicting...")
+    graph_cfg = {"layout":layout, "strategy":strategy}
+    model = ST_GCN_18(3, 3, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
+
+    try:
+        model.load_state_dict(torch.load("../ST_GCN_18.pth", map_location=torch.device(device)))
+    except:
+        print("ERROR !!! Could not load model weights. Are you running the script from the root repository?")
+        exit(1)
+
+    model.eval()
+
+    vframes = torch.from_numpy(np.expand_dims(vframes, axis=0)).float().to(device)
+    print(vframes.shape)
+    with torch.no_grad():
+        output = model(vframes)
+
+    print(output)
+    print(labels)
+
+
 
 
 def parseArgs(argv):

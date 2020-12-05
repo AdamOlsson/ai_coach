@@ -25,10 +25,10 @@ src/model/ExerciseModel/st_gcn/gconv_origin.py
 src/model/ExerciseModel/st_gcn/graph.py
 src/model/ExerciseModel/st_gcn/st_gcn_aaai18.py
 src/model/PoseModel/PoseModel.py
-src/model/PoseModel/VGG.py
 src/model/PoseModel/__init__.py
 src/util/__init__.py
 src/util/load_config.py
+src/util/pose_estimation.py
 src/util/remove_bg_humans.py
 src/util/setup_directories.py
 src/util/preprocessing/__init__.py
