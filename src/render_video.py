@@ -26,10 +26,11 @@ def main(graph_path, video_path):
 
     vframes = np.flip(vframes, axis=3).copy()
 
-    save_path = join("results", "skeleton_" + metadata["filename"])
+    save_path = join("../results", "skeleton_" + metadata["filename"])
+    print("Results written to {}".format(save_path))
+
     torchvision.io.write_video(save_path, from_numpy(vframes), int(metadata["video_properties"]["video_fps"]))
 
-    print("Results written to {}".format(save_path))
 
 
 def parse_args(argv):

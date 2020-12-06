@@ -32,8 +32,8 @@
 ## Usage:
 ## NOTE: Paths needs to relative
 ## python generate_graphs.py -i <path to data root> -o <path to output dir>
-
 from model.PoseModel.PoseModel import PoseModel
+from model.PoseModel.FeatureExtractors.VGG import VGG19FeatureExtractor
 
 from torchvision.datasets.video_utils import VideoClips
 from Transformers.FactorCrop import FactorCrop

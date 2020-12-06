@@ -1,3 +1,5 @@
+#!!!NOTE!!! This file does not work as intended yet.
+
 # pose prediction
 from model.PoseModel.PoseModel import PoseModel
 from Transformers.FactorCrop import FactorCrop

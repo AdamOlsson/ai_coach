@@ -24,7 +24,7 @@ The output directory receives the following format:
 """
 
 # local
-from PosePrediction.util.setup_directories import setup
+from util.setup_directories import setup
 
 # other
 import numpy as np

@@ -40,6 +40,7 @@ preprocess = Compose(transformers)
 
 vframes_proc = preprocess({"data":vframes.numpy(), "type":"video"})["data"]
 poses = poseEstimation(pose_model, config, vframes_proc, device, remove_bg_objects=False)
+
 del vframes_proc
 
 vframes = vframes.numpy()
