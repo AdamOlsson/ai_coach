@@ -92,7 +92,7 @@ def sliding_window(video_path, save_path, epoch_id, preprocess=[]):
     return filenames
 
 
-def main(input_dir, output_dir, dataset_name, epochs=1):
+def main(input_dir, output_dir, dataset_name, epochs=3):
     videos = [f for f in listdir(input_dir) if isfile(join(input_dir, f))]
     labels = [splitext(f)[0] for f in videos ]
 
