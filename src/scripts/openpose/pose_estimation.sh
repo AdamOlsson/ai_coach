@@ -1,15 +1,38 @@
 #!/bin/bash
 # annotiations input
-ARG1="../../datasets/weightlifting/videos/annotations.csv"
-# output dir
-ARG2="../../tmp"
-# openpose root dir
-ARG3="../../gitlibs/openpose"
+#ARG1="../../datasets/weightlifting/videos/annotations.csv"
+## output dir
+#ARG2="../../tmp"
+## openpose root dir
+#ARG3="../../gitlibs/openpose"
+
+# Read input params
+for i in "$@"
+do
+case $i in
+    -a=*|--annotations=*)
+    INPUT_ANNOTATIONSFILE="${i#*=}"
+    shift # past argument=value
+    ;;
+    -o=*|--outputdir=*)
+    OUTDIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    -p=*|--openposeroot=*)
+    OPENPOSEROOTDIR="${i#*=}"
+    shift # past argument=value
+    ;;
+    *)
+          # unknown option
+    ;;
+esac
+done
 
 # Get absolute path of input files
-INPUT_ANNOTATIONSFILE=$(readlink -f  "$ARG1")
-OUTDIR=$(readlink -f  "$ARG2")
-OPENPOSEROOTDIR=$(readlink -f  "$ARG3")
+INPUT_ANNOTATIONSFILE=$(readlink -f  "$INPUT_ANNOTATIONSFILE")
+OUTDIR=$(readlink -f  "$OUTDIR")
+OPENPOSEROOTDIR=$(readlink -f  "$OPENPOSEROOTDIR")
+
 
 WRITEDIR="$OUTDIR/pose_predictions"
 echo "Results are written to $WRITEDIR"
