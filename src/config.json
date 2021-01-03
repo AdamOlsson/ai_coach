@@ -14,7 +14,7 @@
     
     "train":{
         "device"    : "cuda",
-        "layout"    : "openpose",
+        "layout"    : "ntu-rgb+d",
         "strategy"  : "spatial",
         "lr"        : 0.01,
         "gamma"     : 0.9,

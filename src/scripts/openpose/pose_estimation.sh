@@ -96,6 +96,7 @@ do
     FILEPATHABS="$ANNOTATIONSROOT/$FILEPATH"
 
     # Do the pose estimations
+    # --model_pose "COCO" for 18 node bodies
     $OPENPOSEBIN \
             --keypoint_scale 4 \
             --display 0 --render_pose 0 \

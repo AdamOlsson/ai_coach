@@ -67,8 +67,6 @@ def main(annotations_path):
     trainset, testset = random_split(dataset, [train_len, test_len])
 
     dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=no_workers)
-    
-    # TODO: Fix below
 
     graph_cfg = {"layout":layout, "strategy":strategy}
     model = ST_GCN_18(3, len(dataset.labels), graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
@@ -112,7 +110,7 @@ def main(annotations_path):
     
     ct = datetime.now()
     current_time = "{}-{}-{}-{}:{}:{}".format(ct.year, ct.month, ct.day, ct.hour, ct.minute, ct.second)
-    log_name = "log/mispredictions_{}.csv".format(current_time)
+    log_name = "../log/mispredictions_{}.csv".format(current_time)
     with open(log_name, "a") as f:
         f.write("# predicted,correct,filename\n")
 
@@ -179,9 +177,8 @@ def main(annotations_path):
 
 
     fig.tight_layout()
-    fig.savefig("doc/statistics.png")
+    fig.savefig("../doc/statistics.png")
 
-# TODO: Read args from cmd line
 if __name__ == "__main__":
     annotations_path = "/mnt/22b72d38-1529-405a-abaf-096878d0f946/datasets/weightlifting/sliding_window/pose_predictions/annotations.csv" 
     main(annotations_path)
