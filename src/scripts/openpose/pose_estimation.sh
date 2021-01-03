@@ -2,7 +2,7 @@
 # annotiations input
 #ARG1="../../datasets/weightlifting/videos/annotations.csv"
 ## output dir
-#ARG2="../../tmp"
+#ARG2="/mnt/22b72d38-1529-405a-abaf-096878d0f946/datasets"
 ## openpose root dir
 #ARG3="../../gitlibs/openpose"
 
@@ -23,7 +23,7 @@ case $i in
     shift # past argument=value
     ;;
     *)
-          # unknown option
+        # unknown option
     ;;
 esac
 done

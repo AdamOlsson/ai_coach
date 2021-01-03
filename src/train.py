@@ -2,10 +2,11 @@
 from Datasets.GeneralDataset import GeneralDataset
 from Transformers.ToTensor import ToTensor
 from torch.utils.data import DataLoader, random_split
-from PosePrediction.util.load_config import load_config
+from util.load_config import load_config
+from load_functions.openpose_json_body25_load_fun import openpose_json_body25_load_fun
 
 # model and loss
-from models.st_gcn.st_gcn_aaai18 import ST_GCN_18
+from model.ExerciseModel.st_gcn.st_gcn_aaai18 import ST_GCN_18
 from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn import CrossEntropyLoss
@@ -18,7 +19,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 
 # debug
-from torchsummary import summary
+#from torchsummary import summary
 
 def batchLabels(dic, labels):
     t = torch.zeros(len(labels), requires_grad=False, dtype=torch.long)
@@ -55,13 +56,8 @@ def main(annotations_path):
 
     loss_fn  = CrossEntropyLoss()
 
-    exclude_classes = [ "clean", "clean_and_jerk", "clean_pull", "jerk",
-                        "other", "power_clean_and_jerk", "power_clean_power_jerk", "power_jerk",
-                        "power_snatch", "power_snatch_and_snatch", "push_press_and_jerk", "snatch_and_power_snatch",
-                        "snatch_balance", "snatch_pull", "squat_jerk", "clean_power_jerk"] # prototyping purpose
-
     transform = [ToTensor(dtype=torch.float32, requires_grad=False, device="cpu")] # preprocessing done on cpu
-    dataset = GeneralDataset(annotations_path, np.load, transform=Compose(transform), classes_to_exclude=exclude_classes)
+    dataset = GeneralDataset(annotations_path, openpose_json_body25_load_fun, transform=Compose(transform))
 
     print(dataset.annotations["label"].value_counts())
 
@@ -72,6 +68,8 @@ def main(annotations_path):
 
     dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=no_workers)
     
+    # TODO: Fix below
+
     graph_cfg = {"layout":layout, "strategy":strategy}
     model = ST_GCN_18(3, len(dataset.labels), graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
 
@@ -185,5 +183,5 @@ def main(annotations_path):
 
 # TODO: Read args from cmd line
 if __name__ == "__main__":
-    annotations_path = "../datasets/weightlifting/ndarrays/annotations.csv" 
+    annotations_path = "/mnt/22b72d38-1529-405a-abaf-096878d0f946/datasets/weightlifting/sliding_window/pose_predictions/annotations.csv" 
     main(annotations_path)
