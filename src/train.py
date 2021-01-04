@@ -180,5 +180,5 @@ def main(annotations_path):
     fig.savefig("../doc/statistics.png")
 
 if __name__ == "__main__":
-    annotations_path = "/mnt/22b72d38-1529-405a-abaf-096878d0f946/datasets/weightlifting/sliding_window/pose_predictions/annotations.csv" 
+    annotations_path = "/media/adam/G/datasets/weightlifting/sliding_window/pose_predictions/annotations.csv" 
     main(annotations_path)

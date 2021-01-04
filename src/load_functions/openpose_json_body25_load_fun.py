@@ -24,7 +24,6 @@ def openpose_json_body25_load_fun(sample_path):
         
         return keypoints
 
-
     """Each sample_path is a directory of keypoint files. Each keypoint files contain
     keypoints for a single frame in a video.
     """
@@ -37,15 +36,14 @@ def openpose_json_body25_load_fun(sample_path):
         keypoints_people = data["people"] # list
         assert len(keypoints_people) <= 1 # We are only interested in one person
 
-        if len(keypoints_people) < 1:
-            continue
-
-        keypoints_person = keypoints_people[0]["pose_keypoints_2d"]
-
-        # extract frame idx
+        # extract frame idx from name
         frame_idx_str_start = len(keypoint_file) - keypoint_file[::-1].find("_", len("_keypoints.json"))
         frame_idx = int(keypoint_file[frame_idx_str_start: -len("_keypoints.json")])
 
-        keypoints[frame_idx] = keypoints_person
+        if len(keypoints_people) < 1:
+            keypoints[frame_idx] = [0] * (25*3) # we assume that each body has 25 nodes and each node has 3 values (x,y,score)
+        else:
+            keypoints_person = keypoints_people[0]["pose_keypoints_2d"]
+            keypoints[frame_idx] = keypoints_person
     
     return to_numpy(keypoints)
