@@ -1,8 +1,8 @@
 import os
 from os.path import join
 
-path_data         = "/mnt/22b72d38-1529-405a-abaf-096878d0f946/datasets/weightlifting/sliding_window/pose_predictions/data" # path relative this file
-path_csv_save_loc = "/mnt/22b72d38-1529-405a-abaf-096878d0f946/datasets/weightlifting/sliding_window/pose_predictions/annotations.csv"  # path relative this file
+path_data         = "/media/adam/G/datasets/weightlifting/telegram/pose_predictions/data" # path relative this file
+path_csv_save_loc = "/media/adam/G/datasets/weightlifting/telegram/pose_predictions/annotations.csv"  # path relative this file
 
 with open(path_csv_save_loc,'w+') as f:
     data = f.read()

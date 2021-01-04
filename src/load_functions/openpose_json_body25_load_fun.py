@@ -16,7 +16,7 @@ def openpose_json_body25_load_fun(sample_path):
             keypoints = keypoints[:,:300,:,:] # cut length of sample to 300 frames
         if T < 300:
             # replay the earliest frames to fill 300 frames
-            keypoints_300 = np.empty((C, 300, V, 1))
+            keypoints_300 = np.zeros((C, 300, V, 1))
             for k in range(300):
                 keypoints_300[:,k,:,:] = keypoints[:,k%T,:,:]
 
@@ -35,7 +35,10 @@ def openpose_json_body25_load_fun(sample_path):
             data = json.load(f)
         
         keypoints_people = data["people"] # list
-        assert len(keypoints_people) == 1 # We are only interested in one person
+        assert len(keypoints_people) <= 1 # We are only interested in one person
+
+        if len(keypoints_people) < 1:
+            continue
 
         keypoints_person = keypoints_people[0]["pose_keypoints_2d"]
 
