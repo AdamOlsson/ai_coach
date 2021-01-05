@@ -69,7 +69,8 @@ def main(annotations_path):
     dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=no_workers)
 
     graph_cfg = {"layout":layout, "strategy":strategy}
-    model = ST_GCN_18(3, len(dataset.labels), graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
+    len_dataset_labels = max(labels.values()) +1
+    model = ST_GCN_18(3, len_dataset_labels, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
 
     optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=decay, nesterov=True)
     lr_scheduler = StepLR(optimizer, 10, gamma=gamma)
@@ -115,7 +116,7 @@ def main(annotations_path):
         f.write("# predicted,correct,filename\n")
 
     count_no_errors = 0
-    confusion_matrix = np.zeros((len(dataset.labels),len(dataset.labels)))
+    confusion_matrix = np.zeros((len_dataset_labels,len_dataset_labels))
     for _, sample_batched in enumerate(dataloader):
         video = sample_batched["data"].to(device)
         label = batchLabels(labels, sample_batched["label"]).to(device)
@@ -151,7 +152,7 @@ def main(annotations_path):
     ax.imshow(confusion_matrix)
 
     classes = []
-    for i in range(len(dataset.labels)):
+    for i in range(len_dataset_labels):
         classes.append(valueToKey(labels, [i])[0])
 
     ax.set_xticks(np.arange(len(classes)))
