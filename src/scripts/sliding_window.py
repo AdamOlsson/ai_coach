@@ -99,7 +99,7 @@ def main(input_dir, output_dir, dataset_name, epochs=3):
     working_dir = join(output_dir, dataset_name)
 
 
-    samples_dir = join(working_dir, "samples")
+    samples_dir = join(working_dir, "data")
     annotations_file = join(working_dir, "annotations.csv")
 
     partial_run = False
@@ -128,10 +128,10 @@ def main(input_dir, output_dir, dataset_name, epochs=3):
             # create csv from filenames
             with open(annotations_file, "a") as f:
                 for name in filenames:
-                    f.write("samples/{},{}\n".format(join(l,name), l))
+                    f.write("data/{},{}\n".format(join(l,name), l))
 
 
 if __name__ == "__main__":
-    input_dir = "../datasets/weightlifting/sliding_window/full_videos"
-    output_dir = "../datasets/weightlifting/sliding_window"
-    main(input_dir, output_dir, "slided")
+    input_dir = "/media/adam/G/datasets/weightlifting/sliding_window/full_videos"
+    output_dir = "/media/adam/G/datasets/weightlifting/sliding_window"
+    main(input_dir, output_dir, "videos2")
