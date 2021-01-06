@@ -27,7 +27,8 @@ def main(weights_path, json_path, device):
 
     print("Predicting...")
     graph_cfg = {"layout":layout, "strategy":strategy}
-    model = ST_GCN_18(3, 3, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
+    len_dataset_labels = max(labels.values()) +1
+    model = ST_GCN_18(3, len_dataset_labels, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
 
     model.load_state_dict(torch.load(weights_path, map_location=torch.device(device)))
     model.eval()
