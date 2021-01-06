@@ -13,6 +13,19 @@ import getopt, sys
 device = "cuda"
 
 def main(weights_path, json_path, device):
+    def rank_and_print_outputs(output, labels):
+        len_dataset_labels = max(labels.values()) +1
+        labels_list_ordered = [None] * len_dataset_labels
+
+        for k, v in labels.items():
+            labels_list_ordered[v] = k
+
+        # sort output after score
+        rankings = [(label, score) for label, score in sorted(zip(labels_list_ordered, output), key=lambda pair: pair[1], reverse=True)]
+        print("\nResults:")
+        for i, (l, s) in enumerate(rankings):
+            print("{}.  {:15} with score {}".format(i+1, l, s))
+        print("\n")
 
     config = load_config("config.json") # hacky, if pose model weights is loaded then should config as well
 
@@ -36,8 +49,8 @@ def main(weights_path, json_path, device):
     with torch.no_grad():
         output = model(data)
 
-    print(output)
-    print(labels)
+    rank_and_print_outputs(output[0].tolist(), labels)
+    print(*zip(labels, output[0].tolist()))
 
 
 def parseArgs(argv):

@@ -73,7 +73,7 @@ def main(annotations_path):
     model = ST_GCN_18(3, len_dataset_labels, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
 
     optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=decay, nesterov=True)
-    lr_scheduler = StepLR(optimizer, 10, gamma=gamma)
+    lr_scheduler = StepLR(optimizer, 100, gamma=gamma)
     model.train()
 
     losses = []
