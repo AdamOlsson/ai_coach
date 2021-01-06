@@ -65,10 +65,10 @@ def sliding_window(video_path, save_path, epoch_id, preprocess=[]):
 
         # create new preprocess values
         rnd = np.random.uniform(-1,1)
-        rotation = 45 * rnd
+        rotation = 5 * rnd
         scale_factor = np.random.uniform(0.4, 1.4)
-        crop_scale_y = np.random.uniform(0,1)
-        crop_scale_x = np.random.uniform(0,1)
+        crop_scale_y = np.random.uniform(0.5,1)
+        crop_scale_x = np.random.uniform(0.5,1)
 
         # Preprocess
         clip,_,_, _ = videoclips.get_clip(i)
