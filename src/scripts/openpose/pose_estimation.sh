@@ -35,7 +35,7 @@ echo "Results are written to $WRITEDIR"
 if [[ -d "$WRITEDIR" ]]
 then
     while [ "$ANSWER" != "yes" ] && [ "$ANSWER" != "no" ]
-    do  
+    do
         echo "$WRITEDIR exists on your filesystem."
         read -p "Would you like to remove it? (yes/no):" ANSWER
     done
@@ -46,8 +46,6 @@ then
         rm -r $WRITEDIR
     else
         echo "Not removing $WRITEDIR"
-        echo "Exit."
-        exit 0
     fi
 fi
 
@@ -84,9 +82,23 @@ do
     FILENAME="$(basename $FILEPATH)"
     BASENAME=${FILENAME%.*}
     KEYPOINTDIR="$LABELDIR/$BASENAME"
-    mkdir $KEYPOINTDIR 
 
-    # Absolute path
+    if [[ -d "$KEYPOINTDIR" ]]
+    then
+	echo "Found directory $KEYPOINTDIR. Checking if last run succeeded..."
+	COUNT=$(ls -l $KEYPOINTDIR | wc -l)
+	if [ $COUNT -gt 1 ]
+	then
+	    echo "Last run was successful, found $COUNT files."
+	    continue
+	else
+	    echo "Last run failed, rerunning..."
+	fi
+    else
+        mkdir $KEYPOINTDIR
+    fi
+
+   # Absolute path
     FILEPATHABS="$ANNOTATIONSROOT/$FILEPATH"
 
     # Do the pose estimations
