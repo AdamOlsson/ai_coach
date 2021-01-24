@@ -1,7 +1,7 @@
 import os
 from os.path import join
 
-root = "/media/adam/G/datasets/weightlifting/telegram2/videos"
+root = "/media/adam/G/datasets/weightlifting/sliding_window/videos2/pose_predictions"
 path_data         = join(root, "data") # path relative this file
 path_csv_save_loc = join(root, "annotations.csv")  # path relative this file
 
