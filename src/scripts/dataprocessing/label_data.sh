@@ -122,6 +122,7 @@ do
     LABEL_ID=$( expr $LABEL_ID - 1)
     LABEL_DIR="$DATA_DIR/${LABEL_LIST[$LABEL_ID]}"
 
+    echo $FILE
     echo "Labeling file as ${LABEL_LIST[$LABEL_ID]}"
     mv $FILE $LABEL_DIR
     
