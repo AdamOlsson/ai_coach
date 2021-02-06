@@ -1,3 +1,4 @@
+import sys, getopt
 # custom
 from Datasets.GeneralDataset import GeneralDataset
 from Transformers.ToTensor import ToTensor
@@ -17,9 +18,6 @@ import torch, torchvision
 from torchvision.transforms import Compose
 from datetime import datetime
 import matplotlib.pyplot as plt
-
-# debug
-#from torchsummary import summary
 
 def batchLabels(dic, labels):
     t = torch.zeros(len(labels), requires_grad=False, dtype=torch.long)
@@ -60,7 +58,7 @@ def main(annotations_path):
     dataset = GeneralDataset(annotations_path, openpose_json_body25_load_fun, transform=Compose(transform))
 
     print(dataset.annotations["label"].value_counts())
-
+    
     test_len  = int(len(dataset)*test_split)
     train_len = len(dataset)-test_len
 
@@ -79,6 +77,7 @@ def main(annotations_path):
     losses = []
     loss_per_50_steps = []
     for e in range(epochs):
+        #train(model, optimizer, loss, dataset)
         for i_batch, sample_batched in enumerate(dataloader, 0):
             video = sample_batched["data"].to(device)
             label = batchLabels(labels, sample_batched["label"]).to(device)
@@ -180,6 +179,44 @@ def main(annotations_path):
     fig.tight_layout()
     fig.savefig("../doc/statistics.png")
 
+def parseArgs(argv):
+    def printHelp():
+        print("Start training a ST_GCN_18 network on a dataset. Provide the path to the")
+        print("annotations.csv file.")
+        print("\n")
+        print("Args:")
+        print("\n")
+        print("    -a, --annotations_path           Path to annotations file. The annotations file must have")
+        print("                                     a path to a sample as a first value and label as a second.")
+        print("\n")
+        print("                                     Example:")
+        print("                                     path_to_a_sample1,label")
+        print("                                     path_to_a_sample2,label")
+        print("\n")
+        print("Usage:")
+        print("    python train.py -a /path/to/annotations/file")
+
+
+    annotations_path = ''
+    try:
+       opts, args = getopt.getopt(argv,"ha:",["annotations_path="])
+    except getopt.GetoptError:
+       printHelp()
+       sys.exit(2)
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            printHelp()
+            sys.exit(0)
+        elif opt in ("-a", "--annotations_path"):
+            annotations_path = arg
+    return annotations_path
+
+
 if __name__ == "__main__":
-    annotations_path = "/media/adam/G/datasets/weightlifting/sliding_window/pose_predictions/annotations.csv" 
+    #TODO: Take cmd line args.
+    #TODO: Create train function and eval function
+    #TODO: Optional, enable cross validation
+    annotations_path = parseArgs(sys.argv[1:])
+    exit()
+    annotations_path = "/media/adam/G/datasets/weightlifting/telegram2/pose_predictions/snatch_or_not/annotations.csv" 
     main(annotations_path)
