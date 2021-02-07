@@ -34,89 +34,33 @@ def valueToKey(dic, value):
                 break
     return ret
 
-def main(annotations_path):
-
-    config = load_config("config.json")
-
-    # Hyperparameters
-    device      = config["train"]["device"]
-    layout      = config["train"]["layout"]
-    strategy    = config["train"]["strategy"]
-    lr          = config["train"]["lr"]
-    gamma       = config["train"]["gamma"]
-    momentum    = config["train"]["momentum"]
-    decay       = config["train"]["decay"]
-    test_split  = config["train"]["test_split"]
-    batch_size  = config["train"]["batch_size"]
-    epochs      = config["train"]["epochs"]
-    no_workers  = config["train"]["no_workers"]
-    labels      = config["labels"]
-
-    loss_fn  = CrossEntropyLoss()
-
-    transform = [ToTensor(dtype=torch.float32, requires_grad=False, device="cpu")] # preprocessing done on cpu
-    dataset = GeneralDataset(annotations_path, openpose_json_body25_load_fun, transform=Compose(transform))
-
-    print(dataset.annotations["label"].value_counts())
-    
-    test_len  = int(len(dataset)*test_split)
-    train_len = len(dataset)-test_len
-
-    trainset, testset = random_split(dataset, [train_len, test_len])
-
-    dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=no_workers)
-
-    graph_cfg = {"layout":layout, "strategy":strategy}
-    len_dataset_labels = max(labels.values()) +1
-    model = ST_GCN_18(3, len_dataset_labels, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
-
-    optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=decay, nesterov=True)
-    lr_scheduler = StepLR(optimizer, 100, gamma=gamma)
-    model.train()
-
+def train(model, optimizer, loss_fn, dataset, device, labels):
     losses = []
-    loss_per_50_steps = []
-    for e in range(epochs):
-        #train(model, optimizer, loss, dataset)
-        for i_batch, sample_batched in enumerate(dataloader, 0):
-            video = sample_batched["data"].to(device)
-            label = batchLabels(labels, sample_batched["label"]).to(device)
+    model.train()
+    for i_batch, sample_batched in enumerate(dataset, 0):
+        video = sample_batched["data"].to(device)
+        label = batchLabels(labels, sample_batched["label"]).to(device)
 
-            optimizer.zero_grad()
+        optimizer.zero_grad()
 
-            output = model(video)
-            loss = loss_fn(output, label)
-            loss.backward()
-            optimizer.step()
+        output = model(video)
+        loss = loss_fn(output, label)
+        loss.backward()
+        optimizer.step()
 
-            lr_scheduler.step()
+        losses.append(loss.data.item())
 
-            losses.append(loss.data.item())
+    return losses
 
-            if i_batch % 50 == 0:
-                mean_loss = np.mean(losses)
-                print("Epoch {}, Step {}, Mean loss: {}".format(e, i_batch, mean_loss))
-                loss_per_50_steps.append(mean_loss)
-                losses = []
-
-
-    print("Mean loss after training: {}".format(np.mean(loss_per_50_steps)))
-
-    torch.save(model.state_dict(), "ST_GCN_18.pth")
-
+def eval(model, dataset, labels, device):
     model.eval()
-    # NOTE: Batch eval currently not supported
-    dataloader = DataLoader(testset, batch_size=1, shuffle=True, num_workers=0)
     
-    ct = datetime.now()
-    current_time = "{}-{}-{}-{}:{}:{}".format(ct.year, ct.month, ct.day, ct.hour, ct.minute, ct.second)
-    log_name = "../log/mispredictions_{}.csv".format(current_time)
-    with open(log_name, "a") as f:
-        f.write("# predicted,correct,filename\n")
+    labels_len = max(labels.values()) +1
 
+    confusion_matrix = np.zeros((labels_len,labels_len))
     count_no_errors = 0
-    confusion_matrix = np.zeros((len_dataset_labels,len_dataset_labels))
-    for _, sample_batched in enumerate(dataloader):
+    mispredictions = []
+    for _, sample_batched in enumerate(dataset):
         video = sample_batched["data"].to(device)
         label = batchLabels(labels, sample_batched["label"]).to(device)
 
@@ -134,15 +78,92 @@ def main(annotations_path):
         count_no_errors += len(wrong_indices)
         confusion_matrix[predicted_class, label] += 1
 
-        with open(log_name, "a") as f:
-            for i in wrong_indices:
-                f.write("{},{},{}\n".format(
-                    valueToKey(labels, [predicted_class[i]]),
-                    valueToKey(labels, [label[i]]),
-                    sample_batched["name"][i]))
+        for i in wrong_indices:
+            mispredictions.append((valueToKey(labels, [predicted_class[i]]), valueToKey(labels, [label[i]]), sample_batched["name"][i]))
+
+    failure_rate = float(count_no_errors)/len(dataset)
+
+    return failure_rate, confusion_matrix, mispredictions
 
 
-    print("Failure rate: {}%".format(count_no_errors/len(testset)))
+
+def main(annotations_path):
+
+    config = load_config("config.json")
+
+    # Hyperparameters
+    device      = config["train"]["device"]
+    layout      = config["train"]["layout"]
+    strategy    = config["train"]["strategy"]
+    lr          = config["train"]["lr"]
+    gamma       = config["train"]["gamma"]
+    momentum    = config["train"]["momentum"]
+    decay       = config["train"]["decay"]
+    test_split  = config["train"]["test_split"]
+    batch_size  = config["train"]["batch_size"]
+    epochs      = config["train"]["epochs"]
+    no_workers  = config["train"]["no_workers"]
+
+    loss_fn  = CrossEntropyLoss()
+
+    transform = [ToTensor(dtype=torch.float32, requires_grad=False, device="cpu")] # preprocessing done on cpu
+    dataset = GeneralDataset(annotations_path, openpose_json_body25_load_fun, transform=Compose(transform))
+
+    print(dataset.annotations["label"].value_counts())
+    labels_list = list(set(dataset.annotations["label"]))
+    labels_dict = {l: i for i, l in enumerate(labels_list)}
+    labels_len = len(labels_list)
+
+    test_len  = int(len(dataset)*test_split)
+    train_len = len(dataset)-test_len
+
+    trainset, testset = random_split(dataset, [train_len, test_len])
+
+    dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=no_workers)
+
+    graph_cfg = {"layout":layout, "strategy":strategy}
+    model = ST_GCN_18(3, labels_len, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
+
+
+    dataloader = DataLoader(testset, batch_size=1, shuffle=True, num_workers=0)
+    failure_rate, confusion_matrix, mispredictions = eval(model, dataloader, labels_dict, device)
+
+    exit()
+
+    optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=decay, nesterov=True)
+    lr_scheduler = StepLR(optimizer, 2, gamma=gamma)
+    model.train()
+
+    # training
+    losses = []
+    mean_loss_per_epoch = []
+    for e in range(epochs):
+        losses = train(model, optimizer, loss_fn, dataloader, device, labels_dict)
+        # TODO: Eval here
+        lr_scheduler.step()
+
+        mean_loss = np.mean(losses)
+        print("Epoch {}, Mean loss: {}".format(e, mean_loss))
+        mean_loss_per_epoch.append(mean_loss)
+
+    print("Mean loss after training: {}".format(np.mean(mean_loss_per_epoch)))
+
+    torch.save(model.state_dict(), "ST_GCN_18.pth")
+
+    # evaluation
+    # NOTE: Batch eval currently not supported
+    dataloader = DataLoader(testset, batch_size=1, shuffle=True, num_workers=0)
+    failure_rate, confusion_matrix, mispredictions = eval(model, dataloader, labels_dict, device)
+    print("Failure rate: {}%".format(failure_rate))
+
+    # Print statistics 
+    ct = datetime.now()
+    current_time = "{}-{}-{}-{}:{}:{}".format(ct.year, ct.month, ct.day, ct.hour, ct.minute, ct.second)
+    log_name = "../log/mispredictions_{}.csv".format(current_time)
+    with open(log_name, "a") as f:
+        f.write("# predicted,correct,filename\n")
+        for i in mispredictions:
+            f.write("{},{},{}\n".format(i[0], i[1], i[2]))
     
     fig = plt.figure()
     
@@ -151,8 +172,8 @@ def main(annotations_path):
     ax.imshow(confusion_matrix)
 
     classes = []
-    for i in range(len_dataset_labels):
-        classes.append(valueToKey(labels, [i])[0])
+    for i in range(labels_len):
+        classes.append(valueToKey(labels_dict, [i])[0])
 
     ax.set_xticks(np.arange(len(classes)))
     ax.set_yticks(np.arange(len(classes)))
@@ -170,7 +191,7 @@ def main(annotations_path):
     
     ax2 = fig.add_subplot(211)
     ax2.set_title("Training Loss")
-    ax2.plot(loss_per_50_steps)
+    ax2.plot(mean_loss_per_epoch)
 
     ax2.set_ylabel("Loss")
     ax2.set_xlabel("50 Steps")
@@ -213,10 +234,7 @@ def parseArgs(argv):
 
 
 if __name__ == "__main__":
-    #TODO: Take cmd line args.
-    #TODO: Create train function and eval function
+    #TODO: Optional, fix the batch labeling
     #TODO: Optional, enable cross validation
     annotations_path = parseArgs(sys.argv[1:])
-    exit()
-    annotations_path = "/media/adam/G/datasets/weightlifting/telegram2/pose_predictions/snatch_or_not/annotations.csv" 
     main(annotations_path)

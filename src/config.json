@@ -22,13 +22,7 @@
         "decay"     : 0.0001,
         "test_split": 0.1,
         "batch_size": 8,
-        "epochs"    : 4,
+        "epochs"    : 1,
         "no_workers": 3
-    },
-        
-    "labels":{
-        "snatch":0,
-        "frontsquat":1,
-        "backsquat":2
     }
 }
