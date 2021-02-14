@@ -124,12 +124,6 @@ def main(annotations_path):
     graph_cfg = {"layout":layout, "strategy":strategy}
     model = ST_GCN_18(3, labels_len, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
 
-
-    dataloader = DataLoader(testset, batch_size=1, shuffle=True, num_workers=0)
-    failure_rate, confusion_matrix, mispredictions = eval(model, dataloader, labels_dict, device)
-
-    exit()
-
     optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=decay, nesterov=True)
     lr_scheduler = StepLR(optimizer, 2, gamma=gamma)
     model.train()
