@@ -2,7 +2,7 @@ import sys, getopt
 # custom
 from Datasets.GeneralDataset import GeneralDataset
 from Transformers.ToTensor import ToTensor
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, random_split, SubsetRandomSampler
 from util.load_config import load_config
 from load_functions.openpose_json_body25_load_fun import openpose_json_body25_load_fun
 
@@ -11,6 +11,7 @@ from model.ExerciseModel.st_gcn.st_gcn_aaai18 import ST_GCN_18
 from torch.optim import SGD
 from torch.optim.lr_scheduler import StepLR
 from torch.nn import CrossEntropyLoss
+from sklearn.model_selection import KFold
 
 # other
 import numpy as np
@@ -103,6 +104,7 @@ def main(annotations_path):
     batch_size  = config["train"]["batch_size"]
     epochs      = config["train"]["epochs"]
     no_workers  = config["train"]["no_workers"]
+    kfolds      = config["train"]["kfolds"]
 
     loss_fn  = CrossEntropyLoss()
 
@@ -114,56 +116,75 @@ def main(annotations_path):
     labels_dict = {l: i for i, l in enumerate(labels_list)}
     labels_len = len(labels_list)
 
-    test_len  = int(len(dataset)*test_split)
-    train_len = len(dataset)-test_len
-
-    trainset, testset = random_split(dataset, [train_len, test_len])
-
-    dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=no_workers)
-
-    graph_cfg = {"layout":layout, "strategy":strategy}
-    model = ST_GCN_18(3, labels_len, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
-
-    optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=decay, nesterov=True)
-    lr_scheduler = StepLR(optimizer, 2, gamma=gamma)
-    model.train()
+    kfold = KFold(n_splits=kfolds, shuffle=True)
 
     # training
-    losses = []
-    mean_loss_per_epoch = []
-    for e in range(epochs):
-        losses = train(model, optimizer, loss_fn, dataloader, device, labels_dict)
-        # TODO: Eval here
-        lr_scheduler.step()
+    best_failure_rate = None
+    best_mean_loss_per_epoch = None
+    best_mispredictions = None
+    best_confusion_matrix = None
+    mean_loss_per_epoch_per_fold = []
+    for fold_idx, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
 
-        mean_loss = np.mean(losses)
-        print("Epoch {}, Mean loss: {}".format(e, mean_loss))
-        mean_loss_per_epoch.append(mean_loss)
+        train_subsampler = SubsetRandomSampler(train_ids)
+        test_subsampler  = SubsetRandomSampler(test_ids)
+        train_loader     = DataLoader(dataset, batch_size=batch_size, sampler=train_subsampler, num_workers=no_workers)
+        test_loader      = DataLoader(dataset, batch_size=batch_size, sampler=test_subsampler, num_workers=no_workers)
 
-    print("Mean loss after training: {}".format(np.mean(mean_loss_per_epoch)))
+        graph_cfg = {"layout":layout, "strategy":strategy}
+        model = ST_GCN_18(3, labels_len, graph_cfg, edge_importance_weighting=True, data_bn=True).to(device)
+        optimizer = SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=decay, nesterov=True)
+        lr_scheduler = StepLR(optimizer, 2, gamma=gamma)
+        model.train()
 
-    torch.save(model.state_dict(), "ST_GCN_18.pth")
+        mean_loss_per_epoch = []
+        for e in range(epochs):
+            losses = train(model, optimizer, loss_fn, train_loader, device, labels_dict)
+            lr_scheduler.step()
 
-    # evaluation
-    # NOTE: Batch eval currently not supported
-    dataloader = DataLoader(testset, batch_size=1, shuffle=True, num_workers=0)
-    failure_rate, confusion_matrix, mispredictions = eval(model, dataloader, labels_dict, device)
-    print("Failure rate: {}%".format(failure_rate))
+            mean_loss = np.mean(losses)
+            print("Epoch {}, Mean loss: {}".format(e, mean_loss))
+            mean_loss_per_epoch.append(mean_loss)
+
+        mean_loss_per_epoch_per_fold.append(mean_loss_per_epoch) # for plotting
+
+        # evaluation
+        print("Evaluating fold {}...".format(fold_idx))
+        failure_rate, confusion_matrix, mispredictions = eval(model, test_loader, labels_dict, device)
+        print("Fold {} failure rate: {}%\n".format(fold_idx, failure_rate))
+
+        # Save best network
+        if fold_idx == 0 or failure_rate < best_failure_rate:
+            best_failure_rate = failure_rate
+            best_mean_loss_per_epoch = mean_loss_per_epoch
+            best_mispredictions = mispredictions
+            best_confusion_matrix = confusion_matrix
+            torch.save(model.state_dict(), "ST_GCN_18.pth")
+
+
+    print("\n\n")
+    print("Training finished!")
+    print("Best failure rate: {}".format(best_failure_rate))
+    print("\n")
+
 
     # Print statistics 
+
+    # Log mispredictions
     ct = datetime.now()
     current_time = "{}-{}-{}-{}:{}:{}".format(ct.year, ct.month, ct.day, ct.hour, ct.minute, ct.second)
     log_name = "../log/mispredictions_{}.csv".format(current_time)
     with open(log_name, "a") as f:
         f.write("# predicted,correct,filename\n")
-        for i in mispredictions:
+        for i in best_mispredictions:
             f.write("{},{},{}\n".format(i[0], i[1], i[2]))
     
+    # Plot confusion matrix
     fig = plt.figure()
     
-    ax = fig.add_subplot(212)
+    ax = fig.add_subplot(313)
     ax.set_title("Confusion Matrix")
-    ax.imshow(confusion_matrix)
+    ax.imshow(best_confusion_matrix)
 
     classes = []
     for i in range(labels_len):
@@ -183,16 +204,25 @@ def main(annotations_path):
         for j in range(len(classes)):
             _ = ax.text(j, i, confusion_matrix[i, j], ha="center", va="center", color="w")
     
-    ax2 = fig.add_subplot(211)
-    ax2.set_title("Training Loss")
-    ax2.plot(mean_loss_per_epoch)
-
+    # Plot best mean loss per epoch
+    ax2 = fig.add_subplot(311)
+    ax2.set_title("Best Mean Loss per Epoch")
+    ax2.plot(best_mean_loss_per_epoch)
     ax2.set_ylabel("Loss")
     ax2.set_xlabel("50 Steps")
 
+    # Plot all mean loss per epoch
+    ax3 = fig.add_subplot(312)
+    ax3.set_title("All Mean Loss per Epoch")
+    for fold, data in enumerate(mean_loss_per_epoch_per_fold):
+        ax3.plot(data, label="Fold {}".format(fold))
+    ax3.set_ylabel("Loss")
+    ax3.set_xlabel("50 Steps")
 
     fig.tight_layout()
-    fig.savefig("../doc/statistics.png")
+    name = "../doc/statistics.png"
+    fig.savefig(name)
+    print("Saving statistics from only the network with the lowest failure rate to {}".format(name))
 
 def parseArgs(argv):
     def printHelp():
@@ -228,7 +258,5 @@ def parseArgs(argv):
 
 
 if __name__ == "__main__":
-    #TODO: Optional, fix the batch labeling
-    #TODO: Optional, enable cross validation
     annotations_path = parseArgs(sys.argv[1:])
     main(annotations_path)
